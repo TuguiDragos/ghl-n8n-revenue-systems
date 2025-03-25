@@ -1,0 +1,124 @@
+{
+  "name": "CRM Segmentation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-crm-segmentation",
+        "responseMode": "onReceived"
+      },
+      "id": 1,
+      "name": "Webhook (Lead Input)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "string": [
+            {
+              "value1": "={{$json[\"tag\"]}}",
+              "operation": "equals",
+              "value2": "hot-lead"
+            }
+          ]
+        }
+      },
+      "id": 2,
+      "name": "Check Lead Tag",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "apiKey",
+        "resource": "lead",
+        "operation": "update",
+        "leadId": "={{$json[\"id\"]}}",
+        "jsonParameters": true,
+        "updateFieldsJson": "{\"pipeline_stage\": \"Ready to Close\"}"
+      },
+      "id": 3,
+      "name": "Move to Close Stage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        750,
+        200
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "My CRM API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "apiKey",
+        "resource": "automation",
+        "operation": "trigger",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"lead_id\": \"{{$json[\"id\"]}}\", \"sequence\": \"nurture\"}"
+      },
+      "id": 4,
+      "name": "Start Nurture Sequence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        750,
+        400
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "My CRM API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook (Lead Input)": {
+      "main": [
+        [
+          {
+            "node": "Check Lead Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Lead Tag": {
+      "main": [
+        [
+          {
+            "node": "Move to Close Stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start Nurture Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "560bbc88-f7fb-491b-a5a1-f33fe0b49eab"
+}
