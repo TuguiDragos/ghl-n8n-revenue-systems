@@ -1,0 +1,102 @@
+{
+  "name": "Appointment Reminder System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-reminder",
+        "responseMode": "onReceived"
+      },
+      "id": 1,
+      "name": "Webhook (Appointment Trigger)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "\n                const appointmentTime = new Date($json[\"appointment_time\"]);\n                const now = new Date();\n                const timeDiff = (appointmentTime - now) / 1000 / 60;\n\n                if (timeDiff > 60 && timeDiff <= 1440) {\n                  return items;\n                } else {\n                  return [];\n                }\n                "
+      },
+      "id": 2,
+      "name": "Check if 24h Reminder",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "reminders@tuguidragos.com",
+        "toEmail": "={{$json[\"email\"]}}",
+        "subject": "Reminder: Appointment in 24h",
+        "text": "Hey {{$json[\"name\"]}}, just reminding you that your appointment is scheduled for tomorrow at {{$json[\"appointment_time\"]}}."
+      },
+      "id": 3,
+      "name": "Send 24h Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        750,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "from": "YOUR_TWILIO_NUMBER",
+        "to": "={{$json[\"phone\"]}}",
+        "message": "\ud83d\udcc5 Hey {{$json[\"name\"]}}, your appointment is tomorrow at {{$json[\"appointment_time\"]}}. \u2013 Dragos"
+      },
+      "id": 4,
+      "name": "Send 24h SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        750,
+        250
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "1",
+          "name": "My Twilio Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook (Appointment Trigger)": {
+      "main": [
+        [
+          {
+            "node": "Check if 24h Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if 24h Reminder": {
+      "main": [
+        [
+          {
+            "node": "Send 24h Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send 24h SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "15dea137-628a-4de9-a1aa-e518cb4be4f8"
+}
